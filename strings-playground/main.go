@@ -182,4 +182,51 @@
 // }
 
 
-//
+
+// //replace:
+// package main 
+
+// import("fmt"
+// 	"strings"
+// )
+
+// func main(){
+// 	text:="hellow amaan"
+// 	fmt.Println(strings.ReplaceAll(text, "amaan", "ayaan"))
+// }
+
+
+
+//trimming: 
+
+// package main 
+// import (
+// 	"fmt"
+// 	"strings"
+// )
+
+// func main(){
+// 	username:= "    amaan    "
+// 	leftTrimmedUsername := strings.TrimLeft(username, " ")
+// 	fullyTrimmed := strings.TrimSpace(username)
+// 	fmt.Println(leftTrimmedUsername)
+// 	fmt.Println(fullyTrimmed)
+// }
+
+
+package main 
+import (
+	"fmt"
+	"strings"
+)
+
+func main(){
+	var builder strings.Builder
+
+	builder.WriteString("hellow")
+	builder.WriteString(" ")
+	builder.WriteString("world")
+
+
+	fmt.Println(builder.String())
+}

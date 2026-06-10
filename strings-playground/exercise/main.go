@@ -8,5 +8,7 @@ func main()  {
 }
 
 
+//to implement : func CountVowels(word string) int
+
 
 
