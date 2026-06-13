@@ -1,4 +1,3 @@
-each project is independent, independent modules and shi
+removing go friction syntax 
 
-many apps/projects 
-therefore many modules
+
