@@ -41,15 +41,50 @@ func main() {
 	}
 
 	//structs in maps:
-	users := map[int]User{
+	newVariable := map[int]User{
 		1: {
 			Name: "amaan",
-			Age: 21
+			Age:  21,
 		},
 		2: {
 			Name: "Ayaan",
-			Age: 13
+			Age:  13,
 		},
 	}
+	_ = newVariable
+
+	//nested structs
+	type Address struct {
+		City string
+	}
+
+	type User struct {
+		Name    string
+		Address Address
+	}
+
+	amaanUser := User{
+		Name: "amaan",
+		Address: Address{
+			City: "bilaspur",
+		},
+	}
+
+	fmt.Println(amaanUser)
+	fmt.Println(amaanUser.Address.City)
+
+	//anonymous structs -- useful for quick experiemtns:
+	Anonymoususer := struct{
+		Name string 
+		Age int
+	}{
+		Name: "Amaan",
+		Age: 21,
+	}
+
+	_ = Anonymoususer
+	
+
+
 
 }
