@@ -57,13 +57,13 @@ type UpdateUserRequest struct {
 func FindUser(id int) (*User, error)
 
 // why pointers avoid copying :
-func ProcessUser(u User)  //copies the whole struct
-func ProcessUser(u *User) //passes an address , this matters for large files
+// func ProcessUser(u User)  //copies the whole struct
+// func ProcessUser(u *User) //passes an address , this matters for large files
 
-// note: slices + maps are already reference like
-func AddUser(users *[]User) //you need not add the pointer because it is pre built for slices and maps in go
-func AddUser(users *[]User) //is enough
+// // note: slices + maps are already reference like
+// func AddUser(users *[]User) //you need not add the pointer because it is pre built for slices and maps in go
+// func AddUser(users *[]User) //is enough
 
-func (s *UserService) GetUser(id int) (*User, error) {
-	return s.repo.FindByID(id)
-}
+// func (s *UserService) GetUser(id int) (*User, error) {
+// 	return s.repo.FindByID(id)
+// }
