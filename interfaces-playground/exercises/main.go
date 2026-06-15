@@ -1,1 +1,1 @@
-package exercises
+package main
