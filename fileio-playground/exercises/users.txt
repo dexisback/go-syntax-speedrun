@@ -1,0 +1,10 @@
+h
+e
+e
+e
+e
+e
+e
+
+
+(should return 10 lines )
