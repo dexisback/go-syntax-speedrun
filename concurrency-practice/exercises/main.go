@@ -165,32 +165,153 @@ func worker(serviceName string, wg *sync.WaitGroup) {
 
 //problem 3 -- inventory : initial stock is 50, 20 customers buy the same item. so the final stock MUST be 30, regardless of races
 
+// var (
+// 	stock = 50
+// 	mu    sync.Mutex
+// 	wg    sync.WaitGroup
+// )
+
+// func buyItem(customerID int) {
+// 	defer wg.Done()
+
+// 	mu.Lock()
+// 	defer mu.Unlock()
+
+// 	if stock > 0 {
+// 		stock--
+// 		fmt.Println("customer %d bought an item, stock left is : %d", customerID, stock)
+// 	} else {
+// 		fmt.Println("customer %d is out of stock!", customerID)
+// 	}
+
+// }
+
+// func main() {
+// 	for i := 1; i <= 20; i++ {
+// 		wg.Add(1)
+// 		go buyItem(i)
+// 	}
+// 	wg.Wait()
+// 	fmt.Println("final stock is:", stock)
+// }
+
+// ----rw---- //
+
+//scores need to be a global variable:
+
+// var (
+// 	scores = map[string]int{
+// 		"Amaan": 100,
+// 	}
+
+// 	rw sync.RWMutex
+// 	wg sync.WaitGroup
+// )
+
+// func reader(id int) {
+// 	defer wg.Done()
+
+// 	for i := 0; i < 5; i++ {
+// 		rw.RLock()
+// 		fmt.Printf("Reader %d -> %d\n", id, scores["Amaan"])
+// 		rw.RUnlock()
+
+// 		time.Sleep(500 * time.Millisecond)
+// 	}
+// }
+
+// func writer() {
+// 	for i := 0; i < 5; i++ {
+// 		time.Sleep(time.Second)
+
+// 		rw.Lock()
+// 		scores["Amaan"]++
+// 		fmt.Println("Writer updated:", scores["Amaan"])
+// 		rw.Unlock()
+// 	}
+// }
+
+// func main() {
+// 	go writer()
+
+// 	for i := 1; i <= 10; i++ {
+// 		wg.Add(1)
+// 		go reader(i)
+// 	}
+
+// 	wg.Wait()
+// }
+
+//problem 3: building a small cache :
+
+//own tiny in memory redis:
+
+//get() for reading , set() for writing , RWMutex so many readers can read together, but writes are exclusive
+
+// var (
+// 	cache = make(map[int]string)
+// 	rw    sync.RWMutex
+// )
+
+// func GET(key int) string {
+// 	rw.RLock()
+// 	defer rw.RUnlock()
+// 	//function
+// 	return cache[key]
+
+// }
+
+// func SET(key int, value string) { //returns nothin
+// 	rw.Lock()
+// 	defer rw.Unlock()
+// 	//function
+// 	cache[key] = value
+// }
+
+// func main() {
+// 	SET(1, "Amaan")
+// 	SET(2, "Ayaan")
+// 	fmt.Println(GET(1))
+// 	fmt.Println(GET(2))
+// }
+
+//problem 4 -- building an in memory cache in a backend
+
+type User struct {
+	Name string
+}
+
 var (
-	stock = 50
-	mu    sync.Mutex
-	wg    sync.WaitGroup
+	cache = make(map[int]User)
+	rw    sync.RWMutex
 )
 
-func buyItem(customerID int) {
-	defer wg.Done()
+func GETUSER(id int) (User, bool) {
+	rw.RLock()
+	defer rw.RUnlock()
 
-	mu.Lock()
-	defer mu.Unlock()
+	user, ok := cache[id]
+	return user, ok
+}
 
-	if stock > 0 {
-		stock--
-		fmt.Println("customer %d bought an item, stock left is : %d", customerID, stock)
-	} else {
-		fmt.Println("customer %d is out of stock!", customerID)
-	}
+func UPDATEUSER(id int, user User) {
+	rw.Lock()
+	defer rw.Unlock()
+
+	cache[id] = user
 
 }
 
 func main() {
-	for i := 1; i <= 20; i++ {
-		wg.Add(1)
-		go buyItem(i)
+	UPDATEUSER(1, User{Name: "amaan"})
+	UPDATEUSER(1, User{Name: "ayaan"})
+
+	if user, ok := GETUSER(1); ok {
+		fmt.Println(user.Name)
 	}
-	wg.Wait()
-	fmt.Println("final stock is:", stock)
+	UPDATEUSER(1, User{Name: "Amaan Siddiqui"})
+
+	if user, ok := GETUSER(1); ok {
+		fmt.Println(user.Name)
+	}
 }

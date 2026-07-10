@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"sync"
+	"time"
 )
 
 // // phase 1 : goroutines
@@ -83,31 +84,30 @@ import (
 //phase 3 -- race conditions + mutex
 //everything up until now was goroutines, now we will make the goroutine touch the same variable
 
-func increment(counter *int, mu *sync.Mutex, wg *sync.WaitGroup) {
-	defer wg.Done()
+// func increment(counter *int, mu *sync.Mutex, wg *sync.WaitGroup) {
+// 	defer wg.Done()
 
-	for i := 0; i < 1000; i++ {
-		mu.Lock()
-		(*counter)++
-		mu.Unlock()
-	}
-}
+// 	for i := 0; i < 1000; i++ {
+// 		mu.Lock()
+// 		(*counter)++
+// 		mu.Unlock()
+// 	}
+// }
 
-func main() {
-	counter := 0
-	var wg sync.WaitGroup
-	var mu sync.Mutex
+// func main() {
+// 	counter := 0
+// 	var wg sync.WaitGroup
+// 	var mu sync.Mutex
 
-	wg.Add(2)
+// 	wg.Add(2)
 
-	go increment(&counter, &mu, &wg)
-	go increment(&counter, &mu, &wg)
+// 	go increment(&counter, &mu, &wg)
+// 	go increment(&counter, &mu, &wg)
 
-	wg.Wait()
+// 	wg.Wait()
 
-	fmt.Println(counter)
-}
-
+// 	fmt.Println(counter)
+// }
 
 //usually you need mu.Lock()
 //cache[id] = user
@@ -115,8 +115,92 @@ func main() {
 
 //to prevent race condition
 
-
 //defer Unlock()
 //instead of mu.Lock() and mu.Unlock() and typing the code in b/w that area
 //you can simply write defer mu.Unlock() and go will understand what you mean
 
+//RW Mutexes:
+//there will be no blockage to reading but only writing
+
+// var (
+// 	cache = map[int]string{
+// 		1: "Amaan",
+// 	}
+// 	rw sync.RWMutex
+// )
+
+// func read(id int, wg *sync.WaitGroup) {
+// 	defer wg.Done()
+// 	rw.RLock()
+// 	fmt.Println(cache[id])
+// 	rw.RUnlock()
+// }
+
+// func main() {
+// 	var wg sync.WaitGroup
+// 	wg.Add(3)
+
+// 	go read(1, &wg)
+// 	go read(1, &wg)
+// 	go read(1, &wg)
+// }
+// //all three readers can run together with this
+
+// //writing agar karna ho with rw locks then?:
+
+// func write(id int, name string , wg *sync.WaitGroup){
+// 	defer wg.Done()
+
+// 	rw.Lock()
+
+// 	cache[id] = name
+
+// 	rw.Unlock()
+// }
+
+// //so we use normal rw.Lock() and rw.Unlock() when its about a write, but RLock and RUnlock when its about a read
+
+//mixed reads and writes:
+
+var (
+	counter int
+	rw      sync.RWMutex
+)
+
+func reader(id int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	rw.RLock() //normal
+	fmt.Println("reader with id:", id, "reads", counter)
+
+	time.Sleep(time.Second)
+
+	rw.RUnlock()
+
+}
+
+func writer(wg *sync.WaitGroup) {
+	defer wg.Done()
+	counter++
+
+	fmt.Println("write updated man :)")
+	time.Sleep(time.Second)
+
+	rw.Unlock()
+}
+
+func main() {
+	var wg sync.WaitGroup
+
+	wg.Add(4)
+
+	go reader(1, &wg)
+	go reader(2, &wg)
+	go reader(3, &wg)
+
+	//write:
+	go writer(&wg)
+
+	wg.Wait()
+
+}
