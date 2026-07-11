@@ -3,16 +3,15 @@ package main
 import (
 	"fmt"
 	"sync"
-	"time"
 )
 
-func worker(serviceName string, wg *sync.WaitGroup) {
-	defer wg.Done()
+// func worker(serviceName string, wg *sync.WaitGroup) {
+// 	defer wg.Done()
 
-	fmt.Println(serviceName, "starting...")
-	time.Sleep(2 * time.Second)
-	fmt.Println(serviceName, "ready✅")
-}
+// 	fmt.Println(serviceName, "starting...")
+// 	time.Sleep(2 * time.Second)
+// 	fmt.Println(serviceName, "ready✅")
+// }
 
 //we'll call redis , etc etc
 
@@ -277,41 +276,124 @@ func worker(serviceName string, wg *sync.WaitGroup) {
 
 //problem 4 -- building an in memory cache in a backend
 
-type User struct {
-	Name string
+// type User struct {
+// 	Name string
+// }
+
+// var (
+// 	cache = make(map[int]User)
+// 	rw    sync.RWMutex
+// )
+
+// func GETUSER(id int) (User, bool) {
+// 	rw.RLock()
+// 	defer rw.RUnlock()
+
+// 	user, ok := cache[id]
+// 	return user, ok
+// }
+
+// func UPDATEUSER(id int, user User) {
+// 	rw.Lock()
+// 	defer rw.Unlock()
+
+// 	cache[id] = user
+
+// }
+
+// func main() {
+// 	UPDATEUSER(1, User{Name: "amaan"})
+// 	UPDATEUSER(1, User{Name: "ayaan"})
+
+// 	if user, ok := GETUSER(1); ok {
+// 		fmt.Println(user.Name)
+// 	}
+// 	UPDATEUSER(1, User{Name: "Amaan Siddiqui"})
+
+// 	if user, ok := GETUSER(1); ok {
+// 		fmt.Println(user.Name)
+// 	}
+// }
+
+//worker pool exercise for channels:
+
+//classic worker pool pattern:
+// 1 producer (some api service ) creates jobs
+// 1 shared jobs channel
+// 3 workers compete for jobs
+// every job is processed exactly once
+
+// func worker(id int, jobs <- chan int, wg *sync.WaitGroup ){
+// 	defer wg.Done()
+
+// 	for job := range jobs {
+// 		fmt.Println("worker", id, "processing job", job)
+// 		time.Sleep(2 * time.Second) // simulate some work here
+
+// 	}
+// }
+
+// func main(){
+// 	var wg sync.WaitGroup
+
+// 	jobs := make(chan int) //create a jobs channel
+
+// 	//start 3 workers
+// 	for i :=1; i<=3 ; i++{
+// 		//sparn the function 3 times (with goroutines ), and obviously add each time 1 goroutine watchgroup
+// 		wg.Add(1)
+// 		go worker(i, jobs, &wg)
+
+// 		//producer: creates 20 jobs:
+// 		for i:=1 ; i<=20 ; i++ {
+// 			jobs <- i
+// 		}
+// 		close(jobs)
+
+// 		wg.Wait()
+
+// 	}
+// }
+
+//building a pipeline/ simulating a pipeline:
+//generate -> square -> print
+
+func generate(ch1 chan<- int) {
+	defer close(ch1)
+
+	for i := 1; i <= 10; i++ {
+		ch1 <- i
+	}
 }
 
-var (
-	cache = make(map[int]User)
-	rw    sync.RWMutex
-)
+func square(ch1 <-chan int, ch2 chan<- int) {
+	defer close(ch2)
 
-func GETUSER(id int) (User, bool) {
-	rw.RLock()
-	defer rw.RUnlock()
-
-	user, ok := cache[id]
-	return user, ok
+	for num := range ch1 {
+		ch2 <- num * num
+	}
 }
 
-func UPDATEUSER(id int, user User) {
-	rw.Lock()
-	defer rw.Unlock()
+func printResult(ch2 <-chan int, wg *sync.WaitGroup) {
+	defer wg.Done()
 
-	cache[id] = user
-
+	for result := range ch2 {
+		fmt.Println(result)
+	}
 }
 
 func main() {
-	UPDATEUSER(1, User{Name: "amaan"})
-	UPDATEUSER(1, User{Name: "ayaan"})
+	var wg sync.WaitGroup
 
-	if user, ok := GETUSER(1); ok {
-		fmt.Println(user.Name)
-	}
-	UPDATEUSER(1, User{Name: "Amaan Siddiqui"})
+	ch1 := make(chan int)
+	ch2 := make(chan int)
 
-	if user, ok := GETUSER(1); ok {
-		fmt.Println(user.Name)
-	}
+	go generate(ch1)
+	go square(ch1, ch2)
+
+	wg.Add(1)
+	go printResult(ch2, &wg)
+
+	wg.Wait()
+
 }
