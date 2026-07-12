@@ -1,10 +1,5 @@
 package main
 
-import (
-	"fmt"
-	"sync"
-)
-
 // func worker(serviceName string, wg *sync.WaitGroup) {
 // 	defer wg.Done()
 
@@ -358,42 +353,42 @@ import (
 //building a pipeline/ simulating a pipeline:
 //generate -> square -> print
 
-func generate(ch1 chan<- int) {
-	defer close(ch1)
+// func generate(ch1 chan<- int) {
+// 	defer close(ch1)
 
-	for i := 1; i <= 10; i++ {
-		ch1 <- i
-	}
-}
+// 	for i := 1; i <= 10; i++ {
+// 		ch1 <- i
+// 	}
+// }
 
-func square(ch1 <-chan int, ch2 chan<- int) {
-	defer close(ch2)
+// func square(ch1 <-chan int, ch2 chan<- int) {
+// 	defer close(ch2)
 
-	for num := range ch1 {
-		ch2 <- num * num
-	}
-}
+// 	for num := range ch1 {
+// 		ch2 <- num * num
+// 	}
+// }
 
-func printResult(ch2 <-chan int, wg *sync.WaitGroup) {
-	defer wg.Done()
+// func printResult(ch2 <-chan int, wg *sync.WaitGroup) {
+// 	defer wg.Done()
 
-	for result := range ch2 {
-		fmt.Println(result)
-	}
-}
+// 	for result := range ch2 {
+// 		fmt.Println(result)
+// 	}
+// }
 
-func main() {
-	var wg sync.WaitGroup
+// func main() {
+// 	var wg sync.WaitGroup
 
-	ch1 := make(chan int)
-	ch2 := make(chan int)
+// 	ch1 := make(chan int)
+// 	ch2 := make(chan int)
 
-	go generate(ch1)
-	go square(ch1, ch2)
+// 	go generate(ch1)
+// 	go square(ch1, ch2)
 
-	wg.Add(1)
-	go printResult(ch2, &wg)
+// 	wg.Add(1)
+// 	go printResult(ch2, &wg)
 
-	wg.Wait()
+// 	wg.Wait()
 
-}
+// }

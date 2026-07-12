@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"sync"
+	"time"
 )
 
 // "sync"
@@ -401,3 +404,91 @@ import (
 // 	}
 
 // }
+
+func main() {
+	var wg sync.WaitGroup
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	defer cancel() //cancel when done
+
+	generator := func(data string, stream chan interface{}) {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case stream <- data:
+			}
+		}
+	}
+
+	infiniteApples := make(chan interface{})
+	go generator("apple", infiniteApples)
+	infiniteOranges := make(chan interface{})
+	go generator("oranges", infiniteOranges)
+	infinitePeaches := make(chan interface{})
+	go generator("peaches", infinitePeaches)
+
+	wg.Add(1)
+	go func1(ctx, &wg, infiniteApples) //func1
+
+	wg.Add(1)
+	go genericFunc(ctx, &wg, infiniteOranges) //func2
+
+	wg.Add(1)
+	go genericFunc(ctx, &wg, infinitePeaches) //func3
+
+	wg.Wait()
+
+}
+
+func func1(ctx context.Context, parentWg *sync.WaitGroup, stream <-chan interface{}) {
+	defer parentWg.Done()
+	var wg sync.WaitGroup
+
+	doWork := func(ctx context.Context) {
+		defer wg.Done()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case d, ok := <-stream:
+				if !ok { //means the channel closed
+					fmt.Println("channel closed")
+					return
+				}
+				//else if ok is true, move on and print the ata
+				fmt.Println(d)
+			}
+		}
+	}
+
+	newCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+
+	for i := 0; i < 3; i++ {
+		wg.Add(1)
+		go doWork(newCtx)
+
+	}
+
+	wg.Wait()
+
+}
+
+// gonna use this below func in main
+func genericFunc(ctx context.Context, wg *sync.WaitGroup, stream <-chan interface{}) {
+	defer wg.Done()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case d, ok := <-stream:
+			if !ok {
+				fmt.Println("channel closed")
+				return
+			}
+			fmt.Println(d)
+		}
+	}
+}
