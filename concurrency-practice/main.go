@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"sync"
-	"time"
+	"net/http"
 )
 
 // "sync"
@@ -405,90 +403,259 @@ import (
 
 // }
 
-func main() {
-	var wg sync.WaitGroup
+// func main() {
+// 	var wg sync.WaitGroup
 
-	ctx, cancel := context.WithCancel(context.Background())
+// 	ctx, cancel := context.WithCancel(context.Background())
 
-	defer cancel() //cancel when done
+// 	defer cancel() //cancel when done
 
-	generator := func(data string, stream chan interface{}) {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case stream <- data:
-			}
-		}
-	}
+// 	generator := func(data string, stream chan interface{}) {
+// 		for {
+// 			select {
+// 			case <-ctx.Done():
+// 				return
+// 			case stream <- data:
+// 			}
+// 		}
+// 	}
 
-	infiniteApples := make(chan interface{})
-	go generator("apple", infiniteApples)
-	infiniteOranges := make(chan interface{})
-	go generator("oranges", infiniteOranges)
-	infinitePeaches := make(chan interface{})
-	go generator("peaches", infinitePeaches)
+// 	infiniteApples := make(chan interface{})
+// 	go generator("apple", infiniteApples)
+// 	infiniteOranges := make(chan interface{})
+// 	go generator("oranges", infiniteOranges)
+// 	infinitePeaches := make(chan interface{})
+// 	go generator("peaches", infinitePeaches)
 
-	wg.Add(1)
-	go func1(ctx, &wg, infiniteApples) //func1
+// 	wg.Add(1)
+// 	go func1(ctx, &wg, infiniteApples) //func1
 
-	wg.Add(1)
-	go genericFunc(ctx, &wg, infiniteOranges) //func2
+// 	wg.Add(1)
+// 	go genericFunc(ctx, &wg, infiniteOranges) //func2
 
-	wg.Add(1)
-	go genericFunc(ctx, &wg, infinitePeaches) //func3
+// 	wg.Add(1)
+// 	go genericFunc(ctx, &wg, infinitePeaches) //func3
 
-	wg.Wait()
+// 	wg.Wait()
 
-}
+// }
 
-func func1(ctx context.Context, parentWg *sync.WaitGroup, stream <-chan interface{}) {
-	defer parentWg.Done()
-	var wg sync.WaitGroup
+// func func1(ctx context.Context, parentWg *sync.WaitGroup, stream <-chan interface{}) {
+// 	defer parentWg.Done()
+// 	var wg sync.WaitGroup
 
-	doWork := func(ctx context.Context) {
-		defer wg.Done()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case d, ok := <-stream:
-				if !ok { //means the channel closed
-					fmt.Println("channel closed")
-					return
-				}
-				//else if ok is true, move on and print the ata
-				fmt.Println(d)
-			}
-		}
-	}
+// 	doWork := func(ctx context.Context) {
+// 		defer wg.Done()
+// 		for {
+// 			select {
+// 			case <-ctx.Done():
+// 				return
+// 			case d, ok := <-stream:
+// 				if !ok { //means the channel closed
+// 					fmt.Println("channel closed")
+// 					return
+// 				}
+// 				//else if ok is true, move on and print the ata
+// 				fmt.Println(d)
+// 			}
+// 		}
+// 	}
 
-	newCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
-	defer cancel()
+// 	newCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+// 	defer cancel()
 
-	for i := 0; i < 3; i++ {
-		wg.Add(1)
-		go doWork(newCtx)
+// 	for i := 0; i < 3; i++ {
+// 		wg.Add(1)
+// 		go doWork(newCtx)
 
-	}
+// 	}
 
-	wg.Wait()
+// 	wg.Wait()
 
-}
+// }
 
-// gonna use this below func in main
-func genericFunc(ctx context.Context, wg *sync.WaitGroup, stream <-chan interface{}) {
-	defer wg.Done()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case d, ok := <-stream:
-			if !ok {
-				fmt.Println("channel closed")
-				return
-			}
-			fmt.Println(d)
-		}
-	}
+// // gonna use this below func in main
+// func genericFunc(ctx context.Context, wg *sync.WaitGroup, stream <-chan interface{}) {
+// 	defer wg.Done()
+// 	for {
+// 		select {
+// 		case <-ctx.Done():
+// 			return
+// 		case d, ok := <-stream:
+// 			if !ok {
+// 				fmt.Println("channel closed")
+// 				return
+// 			}
+// 			fmt.Println(d)
+// 		}
+// 	}
+// }
+
+//context gpt starts:
+
+//suppose you get an incoming http request:
+//suppose client -> http handler -> db query/redis/external apis/5 5 goroutines
+//without context -> go sendEmail()/ go resizeImage() / go uploadToS3() yeh sab keep on running
+//if i wanna stop them mai context ke through sabko control/stop kar sakta
+
+//with context: once you initialise using ctx := context.Background()
+//then you write something like go sendEmail(ctx)
+//go resizeImage(ctx)
+//go uploadToS3(ctx)
+
+//-----
+
+//creating the root context:
+
+// func main() {
+// 	ctx := context.Background()
+
+// 	fmt.Println(ctx)
+// }
+
+// func dummyWorker(ctx context.Context) {
+// 	for {
+// 		select {
+// 		case <-ctx.Done():
+// 			fmt.Println("worker stopped")
+// 			return
+
+// 		default:
+// 			fmt.Println("worker running...")
+// 			time.Sleep(time.Second * 5)
+// 		}
+
+// 	}
+// }
+
+// func main() {
+// 	ctx, cancel := context.WithCancel(context.Background())
+
+// 	go dummyWorker(ctx)
+// 	time.Sleep(time.Second * 3)
+
+// 	cancel()
+
+// 	time.Sleep(time.Second * 3)
+// }
+
+// case 3 -- multiple workers:
+// func main() {
+// 	ctx, cancel := context.WithCancel(context.Background())
+
+// 	for i := 1; i <= 3; i++ { //spawning 3 such workers to test if one cancel is able to stop ALL
+// 		go dummyWorker(ctx)
+// 	}
+
+// 	time.Sleep(time.Second * 3)
+
+// 	cancel()
+
+// 	time.Sleep(time.Second * 3)
+// }
+
+//context.WithTimeout()
+//this is just withCancel but with a timeout which we want
+
+// func dummyWorker(ctx context.Context) {
+// 	for {
+// 		select {
+// 		case <-ctx.Done():
+// 			fmt.Println("worker has stoppepd")
+// 			return
+
+// 		default:
+// 			fmt.Println("worker is running and working...")
+// 			time.Sleep(3 * time.Second)
+// 		}
+// 	}
+// }
+
+// func main() {
+// 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+// 	defer cancel()
+
+// 	go dummyWorker(ctx)
+
+// 	time.Sleep(5 * time.Second)
+// }
+
+//simulate a db query:
+
+// func database(ctx context.Context) {
+// 	select {
+// 	case <-time.After(time.Second*5): //if you chance this to time.Second (1 second , then the program prints out db query finsihed , else it prints out db cancelled). this is what real backends would do
+// 		fmt.Println("db query finished✅")
+// 	case <-ctx.Done():
+// 		fmt.Println("db cancelled")
+// 	}
+
+// }
+
+// func main() {
+// 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+// 	defer cancel()
+
+// 	database(ctx)
+// }
+
+//exercise 3: multiple operations going on:
+
+// func worker(ctx context.Context, name string, wg *sync.WaitGroup) {
+// 	defer wg.Done()
+
+// 	select {
+// 	case <-time.After(time.Second * 5):
+// 		fmt.Println(name, "finished")
+
+// 	case <-ctx.Done():
+// 		fmt.Println(name, "cancelled")
+// 	}
+
+// }
+
+// func main() {
+// 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+// 	defer cancel()
+
+// 	var wg sync.WaitGroup
+
+// 	names := []string{
+// 		"database",
+// 		"redis",
+// 		"external api",
+// 	}
+
+// 	for _, name := range names {
+// 		wg.Add(1)
+// 		go worker(ctx, name, &wg)
+// 	}
+// 	wg.Wait()
+// }
+
+//passing values in context:
+
+// func Handler(w http.ResponseWriter, r *http.Request){
+// 	ctx := r.Context()
+
+// 	service.GETUSER(ctx, 1)
+// }
+
+
+// func (s *Service) GETUSER(ctx context.Context , id int){
+// 	repo.GETUSER(ctx, id)
+// }
+
+
+// func (r *Repository ) GETUSER(ctx context.Context, id int){
+// 	db.QueryContext(ctx, ...)
+// }
+
+
+
+
+
+
+func main(){
+	ctx := context.WithValue(ctx, userIdKey, userID)
 }
